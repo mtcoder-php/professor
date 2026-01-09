@@ -105,33 +105,33 @@
                 </form>
 
                 <!-- Test Accounts -->
-                <div class="mt-6 pt-6 border-t border-gray-200">
-                    <p class="text-xs font-semibold text-gray-500 text-center mb-3 uppercase">Test Hisoblar</p>
-                    <div class="space-y-2 text-xs">
-                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                            <span class="font-semibold text-gray-700">👨‍💼 Admin</span>
-                            <span class="font-mono text-gray-600">AA1234567 / 01.01.1990</span>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                            <span class="font-semibold text-gray-700">👔 Prorektor</span>
-                            <span class="font-mono text-gray-600">AB1234567 / 15.05.1985</span>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                            <span class="font-semibold text-gray-700">👨‍🏫 O'qituvchi</span>
-                            <span class="font-mono text-gray-600">AC1111111 / 10.03.1992</span>
-                        </div>
-                    </div>
-                </div>
+<!--                <div class="mt-6 pt-6 border-t border-gray-200">-->
+<!--                    <p class="text-xs font-semibold text-gray-500 text-center mb-3 uppercase">Test Hisoblar</p>-->
+<!--                    <div class="space-y-2 text-xs">-->
+<!--                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">-->
+<!--                            <span class="font-semibold text-gray-700">👨‍💼 Admin</span>-->
+<!--                            <span class="font-mono text-gray-600">AA1234567 / 01.01.1990</span>-->
+<!--                        </div>-->
+<!--                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">-->
+<!--                            <span class="font-semibold text-gray-700">👔 Prorektor</span>-->
+<!--                            <span class="font-mono text-gray-600">AB1234567 / 15.05.1985</span>-->
+<!--                        </div>-->
+<!--                        <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">-->
+<!--                            <span class="font-semibold text-gray-700">👨‍🏫 O'qituvchi</span>-->
+<!--                            <span class="font-mono text-gray-600">AC1111111 / 10.03.1992</span>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
 
-                <!-- Register Link -->
-                <div class="mt-6 text-center">
-                    <p class="text-gray-600 text-sm">
-                        Akkauntingiz yo'qmi?
-                        <router-link to="/register" class="font-bold text-blue-600 hover:text-blue-700">
-                            Ro'yxatdan o'tish →
-                        </router-link>
-                    </p>
-                </div>
+<!--                &lt;!&ndash; Register Link &ndash;&gt;-->
+<!--                <div class="mt-6 text-center">-->
+<!--                    <p class="text-gray-600 text-sm">-->
+<!--                        Akkauntingiz yo'qmi?-->
+<!--                        <router-link to="/register" class="font-bold text-blue-600 hover:text-blue-700">-->
+<!--                            Ro'yxatdan o'tish →-->
+<!--                        </router-link>-->
+<!--                    </p>-->
+<!--                </div>-->
             </div>
 
             <!-- Footer -->

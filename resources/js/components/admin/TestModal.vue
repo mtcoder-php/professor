@@ -57,6 +57,23 @@
                         />
                     </div>
 
+                    <!-- Questions Per Attempt - YANGI ← -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Har safar ko'rsatiladigan savollar
+                        </label>
+                        <input
+                            v-model.number="form.questions_per_attempt"
+                            type="number"
+                            min="1"
+                            class="form-input w-full"
+                            placeholder="Bo'sh = barchasi"
+                        />
+                        <p class="text-xs text-gray-500 mt-1">
+                            100 ta savol bo'lsa, 50 yozing - har safar random 50 ta tushadi
+                        </p>
+                    </div>
+
                     <!-- Duration -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -115,7 +132,6 @@
 
                 <!-- Checkboxes -->
                 <div class="space-y-3 pt-2">
-                    <!-- Is Active -->
                     <div class="flex items-center">
                         <input
                             v-model="form.is_active"
@@ -128,7 +144,6 @@
                         </label>
                     </div>
 
-                    <!-- Allow Retake -->
                     <div class="flex items-center">
                         <input
                             v-model="form.allow_retake"
@@ -141,7 +156,6 @@
                         </label>
                     </div>
 
-                    <!-- Show Results -->
                     <div class="flex items-center">
                         <input
                             v-model="form.show_results"
@@ -199,6 +213,7 @@ const form = ref({
     title: '',
     type: '',
     points_per_question: 2,
+    questions_per_attempt: null, // ← YANGI
     duration_minutes: 60,
     pass_score: 70,
     start_date: '',
@@ -211,15 +226,10 @@ const form = ref({
 const submitting = ref(false);
 const errors = ref([]);
 
-// Format date from server to input
 const formatDateForInput = (dateString) => {
     if (!dateString) return '';
 
-    // Server sends: "2024-12-25 10:00:00" (Asia/Tashkent)
-    // We need: "2024-12-25T10:00" (local input format)
-
     try {
-        // Remove timezone info and parse as local time
         const cleanDate = dateString.replace(/\.\d+Z?$/, '').replace(' ', 'T');
         const date = new Date(cleanDate);
 
@@ -238,15 +248,13 @@ const formatDateForInput = (dateString) => {
     }
 };
 
-// Watch for test changes (edit mode)
 watch(() => props.test, (test) => {
     if (test && props.mode === 'edit') {
-        console.log('Loading test for edit:', test); // DEBUG
-
         form.value = {
             title: test.title || '',
             type: test.type || '',
             points_per_question: test.points_per_question || 2,
+            questions_per_attempt: test.questions_per_attempt || null, // ← YANGI
             duration_minutes: test.duration_minutes || 60,
             pass_score: test.pass_score || 70,
             start_date: formatDateForInput(test.start_date),
@@ -255,22 +263,14 @@ watch(() => props.test, (test) => {
             allow_retake: test.allow_retake ?? false,
             show_results: test.show_results ?? true
         };
-
-        console.log('Form populated:', form.value); // DEBUG
     }
 }, { immediate: true });
 
 const handleSubmit = async () => {
     errors.value = [];
     submitting.value = true;
-    // ← DEBUG: Browser qanday yuborayotganini ko'ramiz
-    console.log('=== FORM DATA BEFORE SUBMIT ===');
-    console.log('start_date:', form.value.start_date);
-    console.log('end_date:', form.value.end_date);
-    console.log('Full form:', JSON.stringify(form.value, null, 2));
-    try {
-        console.log('Submitting form:', form.value); // DEBUG
 
+    try {
         if (props.mode === 'create') {
             await axios.post('/api/admin/tests', form.value);
         } else {

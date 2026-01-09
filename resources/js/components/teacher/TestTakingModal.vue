@@ -4,9 +4,9 @@
             <!-- Header -->
             <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold">{{ test.title }}</h2>
+                    <h2 class="text-2xl font-bold">{{ test.test.title }}</h2>
                     <p class="text-sm text-gray-600">
-                        {{ test.questions_count }} ta savol | {{ test.total_points }} ball
+                        {{ test.questions.length }} ta savol | {{ getEffectiveTotal() }} ball
                     </p>
                 </div>
                 <div class="text-right">
@@ -28,15 +28,19 @@
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-2">
-                <span class="bg-green-600 text-white text-sm font-bold px-3 py-1 rounded">
-                  {{ qIndex + 1 }}
-                </span>
+                                <span class="bg-green-600 text-white text-sm font-bold px-3 py-1 rounded">
+                                    {{ qIndex + 1 }}
+                                </span>
                                 <span class="badge badge-info text-xs">
-                  {{ question.points }} ball
-                </span>
+                                    {{ question.points }} ball
+                                </span>
                                 <span :class="question.question_type === 'single' ? 'badge-blue' : 'badge-purple'" class="badge text-xs">
-                  {{ question.question_type === 'single' ? 'Bitta javob' : 'Ko\'p javob' }}
-                </span>
+                                    {{ question.question_type === 'single' ? 'Bitta javob' : 'Ko\'p javob' }}
+                                </span>
+                                <!-- Answer status badge ← YANGI -->
+                                <span v-if="isQuestionAnswered(question.id)" class="badge badge-success text-xs">
+                                    ✓ Javob berildi
+                                </span>
                             </div>
                             <p class="text-lg font-medium text-gray-900">{{ question.question_text }}</p>
                         </div>
@@ -48,7 +52,7 @@
                             v-for="answer in question.answers"
                             :key="answer.id"
                             class="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                            :class="isAnswerSelected(question.id, answer.id) ? 'bg-green-50 border border-green-200' : 'border border-gray-200'"
+                            :class="isAnswerSelected(question.id, answer.id) ? 'bg-green-50 border-2 border-green-500' : 'border border-gray-200'"
                         >
                             <input
                                 v-if="question.question_type === 'single'"
@@ -56,7 +60,8 @@
                                 :name="`question_${question.id}`"
                                 :value="answer.id"
                                 @change="selectAnswer(question.id, answer.id, 'single')"
-                                class="mt-1"
+                                :checked="isAnswerSelected(question.id, answer.id)"
+                                class="mt-1 w-4 h-4 text-green-600"
                             />
                             <input
                                 v-else
@@ -64,11 +69,26 @@
                                 :value="answer.id"
                                 :checked="isAnswerSelected(question.id, answer.id)"
                                 @change="selectAnswer(question.id, answer.id, 'multiple')"
-                                class="mt-1"
+                                class="mt-1 w-4 h-4 text-green-600"
                             />
                             <span class="flex-1 text-gray-900">{{ answer.answer_text }}</span>
                         </label>
                     </div>
+                </div>
+            </div>
+
+            <!-- Progress Info ← YANGI -->
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600">
+                        Javob berilgan: {{ answeredQuestionsCount }} / {{ test.questions.length }}
+                    </span>
+                    <span v-if="!allQuestionsAnswered" class="text-orange-600 font-medium">
+                        ⚠️ Barcha savollarga javob bering
+                    </span>
+                    <span v-else class="text-green-600 font-medium">
+                        ✓ Barcha savollarga javob berildi
+                    </span>
                 </div>
             </div>
 
@@ -77,7 +97,7 @@
                 <button
                     @click="submitTest"
                     :disabled="submitting || !allQuestionsAnswered"
-                    class="btn-primary flex-1 disabled:opacity-50"
+                    class="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {{ submitting ? 'Yuborilmoqda...' : 'Testni yakunlash' }}
                 </button>
@@ -107,7 +127,6 @@ const props = defineProps({
 const emit = defineEmits(['close', 'success']);
 
 const answers = ref({});
-const startedAt = ref(null);
 const timeRemaining = ref(0);
 const submitting = ref(false);
 let timer = null;
@@ -118,6 +137,23 @@ const initializeAnswers = () => {
     });
 };
 
+const getEffectiveTotal = () => {
+    const effectiveQuestions = props.test.test.questions_per_attempt || props.test.questions.length;
+    const pointsPerQuestion = props.test.test.points_per_question || 0;
+    return effectiveQuestions * pointsPerQuestion;
+};
+
+// Check if question is answered ← YANGI
+const isQuestionAnswered = (questionId) => {
+    return answers.value[questionId] && answers.value[questionId].length > 0;
+};
+
+// Count answered questions ← YANGI
+const answeredQuestionsCount = computed(() => {
+    return Object.values(answers.value).filter(ans => ans && ans.length > 0).length;
+});
+
+// Check if all questions answered ← YANGI
 const allQuestionsAnswered = computed(() => {
     return props.test.questions.every(question => {
         return answers.value[question.id] && answers.value[question.id].length > 0;
@@ -143,6 +179,14 @@ const selectAnswer = (questionId, answerId, type) => {
             answers.value[questionId].push(answerId);
         }
     }
+
+    console.log('📝 Answer selected:', {
+        questionId,
+        answerId,
+        type,
+        currentAnswers: answers.value[questionId],
+        progress: `${answeredQuestionsCount.value}/${props.test.questions.length}`
+    });
 };
 
 const formatTime = (seconds) => {
@@ -152,42 +196,58 @@ const formatTime = (seconds) => {
 };
 
 const startTimer = () => {
-    startedAt.value = new Date();
-    timeRemaining.value = props.test.duration_minutes * 60;
+    timeRemaining.value = props.test.test.duration_minutes * 60;
 
     timer = setInterval(() => {
         timeRemaining.value--;
 
         if (timeRemaining.value <= 0) {
             clearInterval(timer);
+            alert('Vaqt tugadi! Test avtomatik topshiriladi.');
             submitTest(true);
         }
     }, 1000);
 };
 
 const submitTest = async (autoSubmit = false) => {
+    // Check if all questions answered (unless auto-submit)
+    if (!autoSubmit && !allQuestionsAnswered.value) {
+        alert('Barcha savollarga javob bering!');
+        return;
+    }
+
     if (!autoSubmit && !confirm('Testni yakunlamoqchimisiz?')) return;
 
     submitting.value = true;
 
     try {
-        const payload = {
-            started_at: startedAt.value.toISOString(),
-            answers: Object.entries(answers.value).map(([questionId, answerIds]) => ({
+        // Filter out empty answers
+        const validAnswers = Object.entries(answers.value)
+            .filter(([questionId, answerIds]) => answerIds && answerIds.length > 0)
+            .map(([questionId, answerIds]) => ({
                 question_id: parseInt(questionId),
                 answer_ids: answerIds
-            }))
+            }));
+
+        const payload = {
+            result_id: props.test.result_id,
+            answers: validAnswers
         };
 
-        const response = await axios.post(`/api/teacher/tests/${props.test.id}/submit`, payload);
+        console.log('📤 Submitting test:', payload);
+
+        const response = await axios.post(`/api/teacher/tests/${props.test.test.id}/submit`, payload);
 
         if (response.data.success) {
-            const result = response.data.data.result;
+            const result = response.data.data;
 
-            if (props.test.show_results) {
+            console.log('✅ Test submitted:', result);
+
+            if (props.test.test.show_results) {
                 alert(
                     `Test yakunlandi!\n\n` +
-                    `Ball: ${result.score} / ${props.test.total_points}\n` +
+                    `To'g'ri javoblar: ${result.correct_answers} / ${result.total_questions}\n` +
+                    `Ball: ${result.score} / ${result.total_points}\n` +
                     `Foiz: ${result.percentage}%\n` +
                     `Natija: ${result.passed ? 'O\'tdingiz ✓' : 'O\'tmadingiz ✗'}`
                 );
@@ -198,8 +258,11 @@ const submitTest = async (autoSubmit = false) => {
             emit('success');
         }
     } catch (error) {
-        console.error('Test yuborishda xatolik:', error);
-        alert(error.response?.data?.message || 'Test yuborishda xatolik yuz berdi');
+        console.error('❌ Test submit error:', error);
+        console.error('Error response:', error.response?.data);
+
+        const errorMessage = error.response?.data?.message || 'Test yuborishda xatolik yuz berdi';
+        alert(errorMessage);
     } finally {
         submitting.value = false;
     }
@@ -207,11 +270,18 @@ const submitTest = async (autoSubmit = false) => {
 
 const confirmClose = () => {
     if (confirm('Testni yakunlamasdan chiqmoqchimisiz? Barcha javoblar yo\'qoladi!')) {
+        if (timer) {
+            clearInterval(timer);
+        }
         emit('close');
     }
 };
 
 onMounted(() => {
+    console.log('📝 Test modal opened:', props.test);
+    console.log('📊 Questions count:', props.test.questions.length);
+    console.log('⏱️ Duration:', props.test.test.duration_minutes, 'minutes');
+
     initializeAnswers();
     startTimer();
 });

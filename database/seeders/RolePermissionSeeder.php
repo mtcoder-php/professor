@@ -283,10 +283,6 @@ class RolePermissionSeeder extends Seeder
         $this->command->info('');
         $this->command->info('👨‍🎓 O\'QITUVCHILAR:');
         $this->command->info('   1. AC1111111 / 10.03.1992 (Tarix)');
-        $this->command->info('   2. AD2222222 / 22.07.1988 (Matematika)');
-        $this->command->info('   3. AE3333333 / 05.12.1995 (Ingliz tili)');
-        $this->command->info('   4. AF4444444 / 18.09.1991 (Informatika)');
-        $this->command->info('   5. AG5555555 / 30.11.1987 (Fizika)');
-        $this->command->info('   6. AH6666666 / 25.04.1993 (Kimyo)');
+
     }
 }

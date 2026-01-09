@@ -6,22 +6,29 @@
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">{{ test.title }}</h2>
                     <div class="flex gap-2 mt-2">
-            <span :class="test.type === 'entry' ? 'badge-blue' : 'badge-purple'" class="badge">
-              {{ test.type === 'entry' ? 'Kiruvchi' : 'Chiquvchi' }}
-            </span>
+                        <span :class="test.type === 'entry' ? 'badge-blue' : 'badge-purple'" class="badge">
+                            {{ test.type === 'entry' ? 'Kiruvchi' : 'Chiquvchi' }}
+                        </span>
                         <span :class="test.is_active ? 'badge-success' : 'badge-warning'" class="badge">
-              {{ test.is_active ? 'Faol' : 'Nofaol' }}
-            </span>
+                            {{ test.is_active ? 'Faol' : 'Nofaol' }}
+                        </span>
                     </div>
                 </div>
             </div>
 
             <!-- Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div class="bg-blue-50 rounded-lg p-4 text-center">
                     <p class="text-3xl font-bold text-blue-600">{{ test.questions_count || 0 }}</p>
-                    <p class="text-xs text-blue-800 mt-1">Savollar</p>
+                    <p class="text-xs text-blue-800 mt-1">Jami savollar</p>
                 </div>
+
+                <!-- Har safar nechta -->
+                <div v-if="test.questions_per_attempt" class="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-indigo-600">{{ test.questions_per_attempt }}</p>
+                    <p class="text-xs text-indigo-800 mt-1">Har safar</p>
+                </div>
+
                 <div class="bg-green-50 rounded-lg p-4 text-center">
                     <p class="text-3xl font-bold text-green-600">{{ test.total_points || 0 }}</p>
                     <p class="text-xs text-green-800 mt-1">Jami ball</p>
@@ -41,6 +48,15 @@
                 <div>
                     <p class="text-sm font-medium text-gray-500 mb-1">Har bir savol uchun ball</p>
                     <p class="text-base text-gray-900">{{ test.points_per_question }}</p>
+                </div>
+
+                <!-- Har safar ko'rsatiladigan savollar -->
+                <div v-if="test.questions_per_attempt">
+                    <p class="text-sm font-medium text-gray-500 mb-1">Har safar ko'rsatiladigan savollar</p>
+                    <p class="text-base text-gray-900">
+                        {{ test.questions_per_attempt }} ta
+                        <span class="text-sm text-gray-500">({{ test.questions_count }} ta dan)</span>
+                    </p>
                 </div>
 
                 <div>

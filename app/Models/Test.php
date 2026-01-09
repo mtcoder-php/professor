@@ -2,13 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Test extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'title',
         'type',
@@ -22,27 +19,21 @@ class Test extends Model
         'is_active',
         'allow_retake',
         'show_results',
-        'created_by'
+        'created_by',
+        'questions_per_attempt',
     ];
 
     protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
         'is_active' => 'boolean',
         'allow_retake' => 'boolean',
         'show_results' => 'boolean',
-        'points_per_question' => 'decimal:2',
-        'total_points' => 'decimal:2',
-        'pass_score' => 'decimal:2'
-        // ← start_date va end_date cast OLIB TASHLANDI
     ];
 
     public function questions()
     {
-        return $this->hasMany(TestQuestion::class)->orderBy('order');
-    }
-
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(TestQuestion::class);
     }
 
     public function results()
@@ -50,18 +41,60 @@ class Test extends Model
         return $this->hasMany(TestResult::class);
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function permissions()
     {
         return $this->hasMany(UserTestPermission::class);
     }
 
-    public function scopeActive($query)
+    /**
+     * Get random questions for test attempt
+     *
+     * @param int $count Number of questions to select
+     * @return \Illuminate\Support\Collection
+     */
+    public function getRandomQuestions($count = null)
     {
-        return $query->where('is_active', true);
+        // Use questions_per_attempt if not specified
+        $count = $count ?? $this->questions_per_attempt ?? $this->questions_count;
+
+        // Get all question IDs
+        $allQuestionIds = $this->questions()->pluck('id')->toArray();
+
+        // Shuffle the array to randomize
+        shuffle($allQuestionIds);
+
+        // Take only the required count
+        $selectedIds = array_slice($allQuestionIds, 0, $count);
+
+        // Get questions with answers in the shuffled order
+        $randomQuestions = $this->questions()
+            ->with('answers')
+            ->whereIn('id', $selectedIds)
+            ->get()
+            // Shuffle again to randomize order
+            ->shuffle();
+
+        \Log::info('🎲 Random questions generated', [
+            'test_id' => $this->id,
+            'total_available' => count($allQuestionIds),
+            'requested_count' => $count,
+            'selected_count' => $randomQuestions->count(),
+            'selected_ids' => $randomQuestions->pluck('id')->toArray()
+        ]);
+
+        return $randomQuestions;
     }
 
-    public function scopeOfType($query, $type)
+    /**
+     * Get total available questions count
+     */
+    public function getTotalQuestionsAttribute()
     {
-        return $query->where('type', $type);
+        return $this->questions()->count();
     }
 }

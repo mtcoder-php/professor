@@ -63,7 +63,18 @@ class TeachersReportExport implements FromCollection, WithHeadings, WithStyles, 
                     ->orderBy('finished_at', 'desc')
                     ->first();
 
-                $row[] = $result ? $result->score . '/' . $test->total_points : '—';
+                if ($result) {
+                    // Calculate correct answers
+                    $correctAnswers = $this->getCorrectAnswersCount($result);
+                    $selectedCount = is_array($result->selected_questions)
+                        ? count($result->selected_questions)
+                        : $test->questions_count;
+                    $totalPoints = $selectedCount * $test->points_per_question;
+
+                    $row[] = "{$correctAnswers}/{$selectedCount} to'g'ri | {$result->score}/{$totalPoints} ball ({$result->percentage}%)";
+                } else {
+                    $row[] = '—';
+                }
             }
 
             // Exit tests
@@ -74,7 +85,17 @@ class TeachersReportExport implements FromCollection, WithHeadings, WithStyles, 
                     ->orderBy('finished_at', 'desc')
                     ->first();
 
-                $row[] = $result ? $result->score . '/' . $test->total_points : '—';
+                if ($result) {
+                    $correctAnswers = $this->getCorrectAnswersCount($result);
+                    $selectedCount = is_array($result->selected_questions)
+                        ? count($result->selected_questions)
+                        : $test->questions_count;
+                    $totalPoints = $selectedCount * $test->points_per_question;
+
+                    $row[] = "{$correctAnswers}/{$selectedCount} to'g'ri | {$result->score}/{$totalPoints} ball ({$result->percentage}%)";
+                } else {
+                    $row[] = '—';
+                }
             }
 
             // Portfolio total
@@ -86,12 +107,49 @@ class TeachersReportExport implements FromCollection, WithHeadings, WithStyles, 
                     return $file->evaluation ? $file->evaluation->score : 0;
                 });
 
-            $row[] = $portfolioTotal ?: '—';
+            $row[] = $portfolioTotal ?: '0';
 
             $data[] = $row;
         }
 
         return collect($data);
+    }
+
+    /**
+     * Get correct answers count from test result
+     */
+    private function getCorrectAnswersCount($result)
+    {
+        if (!$result || !$result->answers || !is_array($result->answers)) {
+            return 0;
+        }
+
+        $test = $result->test;
+        if (!$test) return 0;
+
+        $correctCount = 0;
+
+        foreach ($result->answers as $answer) {
+            $question = $test->questions()->find($answer['question_id']);
+
+            if (!$question) continue;
+
+            $correctAnswerIds = $question->answers()
+                ->where('is_correct', true)
+                ->pluck('id')
+                ->toArray();
+
+            $userAnswerIds = $answer['answer_ids'] ?? [];
+
+            sort($correctAnswerIds);
+            sort($userAnswerIds);
+
+            if ($correctAnswerIds === $userAnswerIds) {
+                $correctCount++;
+            }
+        }
+
+        return $correctCount;
     }
 
     public function headings(): array
@@ -164,6 +222,12 @@ class TeachersReportExport implements FromCollection, WithHeadings, WithStyles, 
         // Center align number column
         $sheet->getStyle('A2:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
+        // Center align test results
+        $testColumnsStart = 'F';
+        $sheet->getStyle($testColumnsStart . '2:' . $highestColumn . $highestRow)
+            ->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         // Alternate row colors
         for ($i = 2; $i <= $highestRow; $i++) {
             if ($i % 2 == 0) {
@@ -187,10 +251,10 @@ class TeachersReportExport implements FromCollection, WithHeadings, WithStyles, 
             'C' => 20,  // Ilmiy daraja
             'D' => 25,  // Fakultet
             'E' => 25,  // Kafedra
-            'F' => 18,  // Entry test 1
-            'G' => 18,  // Entry test 2 (if exists)
-            'H' => 18,  // Exit test 1
-            'I' => 18,  // Exit test 2 (if exists)
+            'F' => 35,  // Entry test 1 (wider for detailed info)
+            'G' => 35,  // Entry test 2
+            'H' => 35,  // Exit test 1
+            'I' => 35,  // Exit test 2
             'J' => 18,  // Portfolio
         ];
     }

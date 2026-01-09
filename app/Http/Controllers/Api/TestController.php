@@ -60,72 +60,51 @@ class TestController extends Controller
     /**
      * Store a newly created test
      */
+    /**
+     * Store a newly created test
+     */
     public function store(Request $request)
     {
         try {
-            // DEBUG
-            Log::info('=== INCOMING REQUEST DATA ===');
-            Log::info('Request data', $request->all()); // ← TUZATILDI
-
-            $validated = $request->validate([
+            $request->validate([
                 'title' => 'required|string|max:255',
                 'type' => 'required|in:entry,exit',
                 'points_per_question' => 'required|numeric|min:0.5',
+                'questions_per_attempt' => 'nullable|integer|min:1',
                 'duration_minutes' => 'required|integer|min:1',
-                'pass_score' => 'required|numeric|min:0',
-                'start_date' => 'nullable',
-                'end_date' => 'nullable',
+                'pass_score' => 'required|numeric|min:0|max:100',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
                 'is_active' => 'boolean',
                 'allow_retake' => 'boolean',
-                'show_results' => 'boolean'
+                'show_results' => 'boolean',
             ]);
 
-            Log::info('Validated data', $validated); // ← TUZATILDI
-
-            // Sanalarni to'g'ri saqlash
-            if (!empty($validated['start_date'])) {
-                Log::info('Processing start_date', ['value' => $validated['start_date']]); // ← TUZATILDI
-
-                $startDate = str_replace('T', ' ', $validated['start_date']);
-                $validated['start_date'] = \Carbon\Carbon::parse($startDate, 'Asia/Tashkent')
-                    ->format('Y-m-d H:i:s');
-
-                Log::info('Converted start_date', ['value' => $validated['start_date']]); // ← TUZATILDI
-            }
-
-            if (!empty($validated['end_date'])) {
-                Log::info('Processing end_date', ['value' => $validated['end_date']]); // ← TUZATILDI
-
-                $endDate = str_replace('T', ' ', $validated['end_date']);
-                $validated['end_date'] = \Carbon\Carbon::parse($endDate, 'Asia/Tashkent')
-                    ->format('Y-m-d H:i:s');
-
-                Log::info('Converted end_date', ['value' => $validated['end_date']]); // ← TUZATILDI
-            }
-
-            $validated['created_by'] = Auth::id();
-            $validated['questions_count'] = 0;
-            $validated['total_points'] = 0;
-
-            Log::info('Final data to save', $validated); // ← TUZATILDI
-
-            $test = Test::create($validated);
-
-            Log::info('Saved to database', $test->toArray()); // ← TUZATILDI
-
-            $test->load(['creator', 'questions']);
+            $test = Test::create([
+                'title' => $request->title,
+                'type' => $request->type,
+                'points_per_question' => $request->points_per_question,
+                'questions_per_attempt' => $request->questions_per_attempt,
+                'duration_minutes' => $request->duration_minutes,
+                'pass_score' => $request->pass_score,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'is_active' => $request->is_active ?? true,
+                'allow_retake' => $request->allow_retake ?? false,
+                'show_results' => $request->show_results ?? true,
+                'created_by' => auth()->id(),
+                'questions_count' => 0, // Will be updated when questions are added
+                'total_points' => 0, // Will be calculated when questions are added
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Test muvaffaqiyatli yaratildi',
+                'message' => 'Test yaratildi',
                 'data' => $test
-            ], 201);
+            ]);
 
         } catch (\Exception $e) {
-            Log::error('Test store error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]); // ← TUZATILDI
+            \Log::error('Test store error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -172,58 +151,42 @@ class TestController extends Controller
         try {
             $test = Test::findOrFail($id);
 
-            // DEBUG
-            Log::info('=== UPDATE REQUEST ===', [
-                'test_id' => $id,
-                'data' => $request->all()
-            ]); // ← TUZATILDI
-
-            $validated = $request->validate([
+            $request->validate([
                 'title' => 'required|string|max:255',
                 'type' => 'required|in:entry,exit',
                 'points_per_question' => 'required|numeric|min:0.5',
+                'questions_per_attempt' => 'nullable|integer|min:1', // ← YANGI
                 'duration_minutes' => 'required|integer|min:1',
-                'pass_score' => 'required|numeric|min:0',
-                'start_date' => 'nullable',
-                'end_date' => 'nullable',
+                'pass_score' => 'required|numeric|min:0|max:100',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
                 'is_active' => 'boolean',
                 'allow_retake' => 'boolean',
-                'show_results' => 'boolean'
+                'show_results' => 'boolean',
             ]);
 
-            // Sanalarni to'g'ri saqlash
-            if (!empty($validated['start_date'])) {
-                $startDate = str_replace('T', ' ', $validated['start_date']);
-                $validated['start_date'] = \Carbon\Carbon::parse($startDate, 'Asia/Tashkent')
-                    ->format('Y-m-d H:i:s');
-                Log::info('Updated start_date', ['value' => $validated['start_date']]); // ← TUZATILDI
-            }
-
-            if (!empty($validated['end_date'])) {
-                $endDate = str_replace('T', ' ', $validated['end_date']);
-                $validated['end_date'] = \Carbon\Carbon::parse($endDate, 'Asia/Tashkent')
-                    ->format('Y-m-d H:i:s');
-                Log::info('Updated end_date', ['value' => $validated['end_date']]); // ← TUZATILDI
-            }
-
-            if ($request->has('points_per_question')) {
-                $validated['total_points'] = $test->questions_count * $validated['points_per_question'];
-            }
-
-            $test->update($validated);
-
-            Log::info('After update', $test->fresh()->toArray()); // ← TUZATILDI
-
-            $test->load(['creator', 'questions']);
+            $test->update([
+                'title' => $request->title,
+                'type' => $request->type,
+                'points_per_question' => $request->points_per_question,
+                'questions_per_attempt' => $request->questions_per_attempt, // ← YANGI
+                'duration_minutes' => $request->duration_minutes,
+                'pass_score' => $request->pass_score,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'is_active' => $request->is_active,
+                'allow_retake' => $request->allow_retake,
+                'show_results' => $request->show_results,
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Test muvaffaqiyatli yangilandi',
+                'message' => 'Test yangilandi',
                 'data' => $test
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Test update error', ['error' => $e->getMessage()]); // ← TUZATILDI
+            \Log::error('Test update error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,

@@ -132,14 +132,24 @@
                     <td class="px-4 py-3 text-sm text-gray-700">{{ teacher.department }}</td>
 
                     <!-- Entry Test Results -->
+                    <!-- Entry Test Results -->
                     <td
                         v-for="(entryTest, idx) in teacher.entry_tests"
                         :key="'entry-result-' + idx"
                         class="px-4 py-3 text-center bg-green-50"
                     >
                         <template v-if="entryTest.score !== null">
+                            <!-- Savol/Javob ← -->
+                            <div class="text-xs text-gray-600 mb-1">
+                                {{ entryTest.correct_answers }}/{{ entryTest.total_questions }} to'g'ri
+                            </div>
+                            <!-- Ball ← -->
                             <div class="font-bold text-lg" :class="entryTest.passed ? 'text-green-600' : 'text-red-600'">
-                                {{ entryTest.score }}/{{ entryTest.total_points }}
+                                {{ entryTest.score }}/{{ entryTest.total_points }} ball
+                            </div>
+                            <!-- Foiz ← -->
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ entryTest.percentage }}%
                             </div>
                         </template>
                         <span v-else class="text-gray-400">—</span>
@@ -152,8 +162,17 @@
                         class="px-4 py-3 text-center bg-blue-50"
                     >
                         <template v-if="exitTest.score !== null">
+                            <!-- Savol/Javob ← -->
+                            <div class="text-xs text-gray-600 mb-1">
+                                {{ exitTest.correct_answers }}/{{ exitTest.total_questions }} to'g'ri
+                            </div>
+                            <!-- Ball ← -->
                             <div class="font-bold text-lg" :class="exitTest.passed ? 'text-green-600' : 'text-red-600'">
-                                {{ exitTest.score }}/{{ exitTest.total_points }}
+                                {{ exitTest.score }}/{{ exitTest.total_points }} ball
+                            </div>
+                            <!-- Foiz ← -->
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ exitTest.percentage }}%
                             </div>
                         </template>
                         <span v-else class="text-gray-400">—</span>

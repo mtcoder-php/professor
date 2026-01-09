@@ -12,7 +12,7 @@
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 9px;
+            font-size: 8px;
             margin: 0;
             padding: 0;
         }
@@ -39,25 +39,27 @@
 
         th, td {
             border: 1px solid #333;
-            padding: 5px 3px;
+            padding: 4px 2px;
             text-align: center;
+            vertical-align: middle;
         }
 
         th {
             background-color: #4CAF50;
             color: white;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 7px;
             text-transform: uppercase;
         }
 
         td {
-            font-size: 8px;
+            font-size: 7px;
+            line-height: 1.3;
         }
 
         .text-left {
             text-align: left;
-            padding-left: 5px;
+            padding-left: 4px;
         }
 
         .text-center {
@@ -65,52 +67,45 @@
         }
 
         .num-col {
-            width: 25px;
+            width: 20px;
         }
 
         .name-col {
-            width: 120px;
+            width: 110px;
             text-align: left;
         }
 
         .degree-col {
-            width: 60px;
-            font-size: 7px;
+            width: 55px;
+            font-size: 6px;
         }
 
         .faculty-col {
-            width: 80px;
+            width: 75px;
             text-align: left;
-            font-size: 7px;
+            font-size: 6px;
         }
 
         .dept-col {
-            width: 80px;
+            width: 75px;
             text-align: left;
-            font-size: 7px;
+            font-size: 6px;
         }
 
         .test-col {
-            width: 50px;
+            width: 48px;
             font-weight: bold;
+            font-size: 6px;
         }
 
         .portfolio-col {
-            width: 50px;
+            width: 40px;
             font-weight: bold;
             background-color: #f3e5f5;
         }
 
         tr:nth-child(even) {
             background-color: #f9f9f9;
-        }
-
-        .passed {
-            color: #4CAF50;
-        }
-
-        .failed {
-            color: #f44336;
         }
 
         .entry-header {
@@ -166,23 +161,22 @@
         <tr>
             <td class="text-center">{{ $index + 1 }}</td>
             <td class="name-col text-left">
-                <strong>{{ $teacher['full_name'] }}</strong><br>
-                <small style="color: #666;">{{ $teacher['scientific_degree'] }}</small>
+                <strong>{{ $teacher['full_name'] }}</strong>
             </td>
             <td class="degree-col">{{ $teacher['scientific_degree'] }}</td>
             <td class="faculty-col text-left">{{ $teacher['faculty'] }}</td>
             <td class="dept-col text-left">{{ $teacher['department'] }}</td>
 
             @foreach($teacher['entry_results'] as $result)
-                <td class="test-col">{{ $result }}</td>
+                <td class="test-col">{!! nl2br($result) !!}</td>
             @endforeach
 
             @foreach($teacher['exit_results'] as $result)
-                <td class="test-col">{{ $result }}</td>
+                <td class="test-col">{!! nl2br($result) !!}</td>
             @endforeach
 
             <td class="portfolio-col">
-                <strong>{{ $teacher['portfolio_score'] ?: '—' }}</strong>
+                <strong>{{ $teacher['portfolio_score'] ?: '0' }}</strong>
             </td>
         </tr>
     @endforeach

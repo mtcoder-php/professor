@@ -17,7 +17,8 @@ class TestResult extends Model
         'score',
         'percentage',
         'passed',
-        'answers'
+        'answers',
+        'selected_questions', // ← QOSHILDI
     ];
 
     protected $casts = [
@@ -26,7 +27,8 @@ class TestResult extends Model
         'score' => 'decimal:2',
         'percentage' => 'decimal:2',
         'passed' => 'boolean',
-        'answers' => 'array'
+        'answers' => 'array',
+        'selected_questions' => 'array', // ← QOSHILDI
     ];
 
     /**
