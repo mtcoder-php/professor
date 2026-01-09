@@ -17,12 +17,97 @@ class RolePermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Rollar yaratish
-        $adminRole = Role::create(['name' => 'admin']);
-        $prorektorRole = Role::create(['name' => 'prorektor']);
-        $teacherRole = Role::create(['name' => 'teacher']);
+        // ============================================
+        // PERMISSIONS YARATISH - YANGI ←
+        // ============================================
+        $permissions = [
+            // Faculty
+            'view_faculty',
+            'create_faculty',
+            'edit_faculty',
+            'delete_faculty',
 
+            // Department
+            'view_department',
+            'create_department',
+            'edit_department',
+            'delete_department',
+
+            // User
+            'view_user',
+            'create_user',
+            'edit_user',
+            'delete_user',
+            'assign_role',
+
+            // Test
+            'view_test',
+            'create_test',
+            'edit_test',
+            'delete_test',
+            'take_test',
+            'view_test_results',
+
+            // Test Permission
+            'manage_test_permissions',
+
+            // Portfolio
+            'view_portfolio',
+            'upload_portfolio',
+            'evaluate_portfolio',
+            'view_all_portfolios',
+
+            // Settings
+            'manage_settings',
+
+            // Reports
+            'view_reports',
+            'export_reports',
+
+            // Roles & Permissions
+            'manage_roles',
+            'manage_permissions',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::create(['name' => $permission]);
+        }
+
+        // ============================================
+        // ROLLAR YARATISH VA PERMISSIONS BERISH
+        // ============================================
+
+        // Admin Role
+        $adminRole = Role::create(['name' => 'admin']);
+        $adminRole->givePermissionTo(Permission::all()); // All permissions
+
+        // Prorektor Role
+        $prorektorRole = Role::create(['name' => 'prorektor']);
+        $prorektorRole->givePermissionTo([
+            'view_faculty',
+            'view_department',
+            'view_user',
+            'view_test',
+            'view_test_results',
+            'manage_test_permissions',
+            'view_portfolio',
+            'evaluate_portfolio',
+            'view_all_portfolios',
+            'view_reports',
+            'export_reports',
+        ]);
+
+        // Teacher Role
+        $teacherRole = Role::create(['name' => 'teacher']);
+        $teacherRole->givePermissionTo([
+            'take_test',
+            'view_portfolio',
+            'upload_portfolio',
+        ]);
+
+        // ============================================
         // YANGI ASR FAKULTETI
+        // ============================================
         $faculty = Faculty::create([
             'name' => 'Yangi asr fakulteti',
             'code' => 'YAF',
@@ -32,7 +117,9 @@ class RolePermissionSeeder extends Seeder
             'is_active' => true
         ]);
 
+        // ============================================
         // 6 TA KAFEDRA
+        // ============================================
         $departments = [
             [
                 'name' => 'Tarix kafedrasi',
@@ -85,7 +172,9 @@ class RolePermissionSeeder extends Seeder
             ]);
         }
 
-        // Test foydalanuvchilar
+        // ============================================
+        // TEST FOYDALANUVCHILAR
+        // ============================================
         $tarixKafedra = Department::where('code', 'TK')->first();
         $matematikaKafedra = Department::where('code', 'MK')->first();
         $ingliztiliKafedra = Department::where('code', 'ITK')->first();
@@ -118,7 +207,7 @@ class RolePermissionSeeder extends Seeder
         ]);
         $prorektor->assignRole($prorektorRole);
 
-        // 3-7. O'QITUVCHILAR (Har bir kafedra uchun)
+        // 3-8. O'QITUVCHILAR (Har bir kafedra uchun)
         $teachers = [
             [
                 'full_name' => 'Rahimov Jamshid Karimovich',
@@ -179,6 +268,8 @@ class RolePermissionSeeder extends Seeder
             $teacher->assignRole($teacherRole);
         }
 
+        $this->command->info('✅ Permissions yaratildi: ' . count($permissions) . ' ta');
+        $this->command->info('✅ Rollar yaratildi: admin, prorektor, teacher');
         $this->command->info('✅ Yangi asr fakulteti va 6 ta kafedra yaratildi!');
         $this->command->info('✅ Test foydalanuvchilar:');
         $this->command->info('');

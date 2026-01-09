@@ -87,5 +87,21 @@ export const useAuthStore = defineStore('auth', {
                 router.push('/login');
             }
         },
+        async register(userData) {
+            try {
+                const response = await axios.post('/api/register', userData);
+
+                // Ro'yxatdan o'tgach tokenni saqlash
+                this.user = response.data.user;
+                this.token = response.data.token;
+                localStorage.setItem('token', response.data.token);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+
+                return response.data;
+            } catch (error) {
+                console.error('Registration failed:', error);
+                throw error;
+            }
+        }
     },
 });

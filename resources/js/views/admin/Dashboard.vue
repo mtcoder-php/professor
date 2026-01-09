@@ -18,10 +18,16 @@
             </div>
         </div>
 
+        <!-- Loading State -->
+        <div v-if="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <p class="text-gray-600 mt-4">Yuklanmoqda...</p>
+        </div>
+
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Fakultetlar -->
-            <div class="stat-card group cursor-pointer">
+            <div class="stat-card group cursor-pointer" @click="$router.push('/admin/faculties')">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-white/20 rounded-xl">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,7 +36,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">Fakultetlar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.faculties }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.faculties || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
@@ -42,7 +48,7 @@
             </div>
 
             <!-- Kafedralar -->
-            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer" @click="$router.push('/admin/departments')">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-white/20 rounded-xl">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +57,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">Kafedralar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.departments }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.departments || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
@@ -63,7 +69,7 @@
             </div>
 
             <!-- O'qituvchilar -->
-            <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
+            <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer" @click="$router.push('/admin/users')">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-white/20 rounded-xl">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,7 +78,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">O'qituvchilar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.teachers }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.teachers || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
@@ -84,7 +90,7 @@
             </div>
 
             <!-- Testlar -->
-            <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
+            <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer" @click="$router.push('/admin/tests')">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-white/20 rounded-xl">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +99,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">Testlar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.tests }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.tests || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
@@ -210,14 +216,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import axios from 'axios';
 
 const authStore = useAuthStore();
 const user = computed(() => authStore.user);
 
+const loading = ref(false);
 const stats = ref({
-    faculties: 1,
-    departments: 6,
-    teachers: 8,
+    faculties: 0,
+    departments: 0,
+    teachers: 0,
     tests: 0
 });
 
@@ -226,8 +234,22 @@ const currentDate = computed(() => {
     return new Date().toLocaleDateString('uz-UZ', options);
 });
 
+const loadStats = async () => {
+    loading.value = true;
+    try {
+        const response = await axios.get('/api/admin/dashboard/stats');
+
+        if (response.data.success) {
+            stats.value = response.data.data;
+        }
+    } catch (error) {
+        console.error('Load stats error:', error);
+    } finally {
+        loading.value = false;
+    }
+};
+
 onMounted(() => {
-    // Stats yuklash
-    // axios.get('/api/admin/stats').then(...)
+    loadStats();
 });
 </script>

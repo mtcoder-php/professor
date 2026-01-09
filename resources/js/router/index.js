@@ -8,14 +8,17 @@ import TeacherLayout from '@/layouts/TeacherLayout.vue';
 
 // Auth
 import Login from '@/views/auth/Login.vue';
-
+import Register from '@/views/auth/Register.vue';
 // Admin Views
 import AdminDashboard from '@/views/admin/Dashboard.vue';
 import Faculties from '@/views/admin/Faculties.vue';
 import Departments from '@/views/admin/Departments.vue';
 import Users from '@/views/admin/Users.vue';
 import Tests from '@/views/admin/Tests.vue';
-
+import AdminProfile from '@/views/admin/Profile.vue';
+import AdminSettings from '@/views/admin/Settings.vue';
+import AdminRoles from '@/views/admin/Roles.vue';
+import AdminReports from '@/views/admin/Reports.vue';
 // ProRektor Views
 import ProRektorDashboard from '@/views/prorektor/Dashboard.vue';
 import TestPermissions from '@/views/prorektor/TestPermissions.vue';
@@ -38,7 +41,12 @@ const routes = [
         component: Login,
         meta: { guest: true }
     },
-
+    {
+        path: '/register',
+        name: 'Register',
+        component: Register, // ← Register sahifasini bog'lang
+        meta: { guest: true }
+    },
     // Admin Routes
     {
         path: '/admin',
@@ -69,6 +77,26 @@ const routes = [
                 path: 'tests',
                 name: 'Tests',
                 component: Tests
+            },
+            {
+                path: 'profile',
+                name: 'AdminProfile',
+                component: AdminProfile
+            },
+            {
+                path: 'settings',
+                name: 'Settings',
+                component: AdminSettings
+            },
+            {
+                path: 'roles',
+                name: 'Roles',
+                component: AdminRoles
+            },
+            {
+                path: 'reports',
+                name: 'AdminReports',
+                component: AdminReports
             }
         ]
     },

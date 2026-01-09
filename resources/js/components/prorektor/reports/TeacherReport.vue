@@ -8,8 +8,10 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Fakultet:</label>
                     <select v-model="filters.faculty_id" @change="onFacultyChange" class="form-input w-full">
                         <option value="">Barcha fakultetlar</option>
-                        <option v-for="faculty in faculties" :key="faculty.id" :value="faculty.id">
-                            {{ faculty.name }}
+                        <option v-for="(faculty, index) in faculties"
+                                :key="faculty?.id || index"
+                                :value="faculty?.id">
+                            {{ faculty?.name || 'Nomsiz fakultet' }}
                         </option>
                     </select>
                 </div>
@@ -216,13 +218,25 @@ const filteredDepartments = computed(() => {
 const loadFaculties = async () => {
     try {
         const response = await axios.get('/api/faculties');
-        if (response.data.success) {
-            faculties.value = response.data.data || [];
+        console.log("Fakultetlar datasi:", response.data); // Konsolda tekshirish uchun
+
+        let rawData = [];
+
+        // Ma'lumot qayerda kelganini aniqlash (Struktura har xil bo'lishi mumkin)
+        if (response.data.success && Array.isArray(response.data.data)) {
+            rawData = response.data.data;
         } else if (Array.isArray(response.data)) {
-            faculties.value = response.data;
+            rawData = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+            rawData = response.data.data;
         }
+
+        // Ma'lumotni tozalash va o'zlashtirish
+        faculties.value = rawData.filter(f => f && (f.id || f.ID));
+
     } catch (error) {
-        console.error('Faculties load error:', error);
+        console.error('Fakultetlarni yuklashda xatolik:', error);
+        faculties.value = [];
     }
 };
 
