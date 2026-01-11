@@ -3,77 +3,165 @@
 namespace App\Http\Controllers\Api\ProRektor;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Test;
-use App\Models\UserTestPermission;
 use App\Models\TestResult;
 use App\Models\PortfolioFile;
+use App\Models\UserTestPermission;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     /**
-     * Get prorektor dashboard data
+     * Get ProRektor dashboard statistics
      */
     public function index()
     {
         try {
-            $user = Auth::user();
+            \Log::info('📊 ProRektor dashboard requested');
 
-            // Statistics
-            $totalTeachers = User::role('teacher')->count();
-            $totalTests = Test::active()->count();
+            $stats = [
+                // Total teachers
+                'total_teachers' => User::whereHas('roles', function($q) {
+                    $q->where('name', 'teacher');
+                })->count(),
 
-            $testPermissions = UserTestPermission::where('is_allowed', true)->count();
-            $completedTests = TestResult::distinct('user_id')->count('user_id');
+                // Total tests
+                'total_tests' => Test::where('is_active', true)->count(),
 
-            $portfolioStats = [
-                'pending' => PortfolioFile::where('status', 'pending')->count(),
-                'evaluated' => PortfolioFile::where('status', 'evaluated')->count(),
-                'rejected' => PortfolioFile::where('status', 'rejected')->count(),
-                'total' => PortfolioFile::count()
+                // Teachers who completed tests
+                'completed_tests' => TestResult::whereNotNull('finished_at')
+                    ->distinct('user_id')
+                    ->count('user_id'),
+
+                // Pending permissions
+                'pending_permissions' => UserTestPermission::where('is_allowed', false)
+                    ->count(),
+
+                // Portfolios pending evaluation
+                'pending_portfolios' => PortfolioFile::where('status', 'pending')
+                    ->count(),
+
+                // Evaluated portfolios
+                'evaluated_portfolios' => PortfolioFile::where('status', 'evaluated')
+                    ->count(),
+
+                // Test pass rate
+                'passed_tests' => TestResult::where('passed', true)
+                    ->whereNotNull('finished_at')
+                    ->count(),
+
+                'failed_tests' => TestResult::where('passed', false)
+                    ->whereNotNull('finished_at')
+                    ->count(),
             ];
 
-            // Recent test results
-            $recentResults = TestResult::with(['user', 'test'])
-                ->latest()
-                ->take(10)
-                ->get();
+            // Calculate pass rate
+            $totalCompletedTests = $stats['passed_tests'] + $stats['failed_tests'];
+            $stats['pass_rate'] = $totalCompletedTests > 0
+                ? round(($stats['passed_tests'] / $totalCompletedTests) * 100, 1)
+                : 0;
 
-            // Pending portfolios
-            $pendingPortfolios = PortfolioFile::where('status', 'pending')
-                ->with(['user', 'category'])
-                ->latest()
-                ->take(10)
-                ->get();
-
-            $data = [
-                'user' => $user,
-                'statistics' => [
-                    'total_teachers' => $totalTeachers,
-                    'total_tests' => $totalTests,
-                    'test_permissions' => $testPermissions,
-                    'completed_tests' => $completedTests,
-                    'portfolio' => $portfolioStats
-                ],
-                'recent_results' => $recentResults,
-                'pending_portfolios' => $pendingPortfolios
-            ];
+            \Log::info('✅ ProRektor stats calculated', $stats);
 
             return response()->json([
                 'success' => true,
-                'data' => $data
+                'data' => $stats
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('ProRektor Dashboard error', ['error' => $e->getMessage()]);
+            \Log::error('❌ ProRektor dashboard error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Xatolik yuz berdi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get recent activities for ProRektor
+     */
+    public function getRecentActivity()
+    {
+        try {
+            $activities = collect();
+
+            // Recent test permissions (last 2)
+            $recentPermissions = UserTestPermission::with(['user', 'test'])
+                ->orderBy('created_at', 'desc')
+                ->limit(2)
+                ->get()
+                ->map(function($permission) {
+                    return [
+                        'type' => 'permission_granted',
+                        'icon' => 'check',
+                        'title' => 'Test ruxsati berildi',
+                        'description' => $permission->user->full_name . ' - ' . $permission->test->title,
+                        'timestamp' => $permission->created_at,
+                        'color' => 'green'
+                    ];
+                });
+
+            $activities = $activities->merge($recentPermissions);
+
+            // Recent test submissions (last 2)
+            $recentTests = TestResult::with(['user', 'test'])
+                ->whereNotNull('finished_at')
+                ->orderBy('finished_at', 'desc')
+                ->limit(2)
+                ->get()
+                ->map(function($result) {
+                    return [
+                        'type' => 'test_completed',
+                        'icon' => 'clipboard',
+                        'title' => 'Test topshirildi',
+                        'description' => $result->user->full_name . ' - ' . $result->test->title . ' (' . $result->percentage . '%)',
+                        'timestamp' => $result->finished_at,
+                        'color' => $result->passed ? 'green' : 'red'
+                    ];
+                });
+
+            $activities = $activities->merge($recentTests);
+
+            // Recent portfolio uploads (last 2)
+            $recentPortfolios = PortfolioFile::with('user')
+                ->orderBy('created_at', 'desc')
+                ->limit(2)
+                ->get()
+                ->map(function($file) {
+                    return [
+                        'type' => 'portfolio_uploaded',
+                        'icon' => 'folder',
+                        'title' => 'Portfolio yuklandi',
+                        'description' => $file->user->full_name ?? 'Unknown',
+                        'timestamp' => $file->created_at,
+                        'color' => 'purple'
+                    ];
+                });
+
+            $activities = $activities->merge($recentPortfolios);
+
+            // Sort by timestamp and take 4
+            $activities = $activities
+                ->sortByDesc('timestamp')
+                ->take(4)
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activities
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('ProRektor recent activity error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
                 'message' => 'Xatolik yuz berdi',
-                'error' => $e->getMessage()
-            ], 500);
+                'data' => []
+            ], 200);
         }
     }
 }

@@ -63,39 +63,45 @@ class TestController extends Controller
     /**
      * Store a newly created test
      */
+    /**
+     * Store new test
+     */
+    /**
+     * Store new test
+     */
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'type' => 'required|in:entry,exit',
                 'points_per_question' => 'required|numeric|min:0.5',
                 'questions_per_attempt' => 'nullable|integer|min:1',
                 'duration_minutes' => 'required|integer|min:1',
                 'pass_score' => 'required|numeric|min:0|max:100',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'start_date' => 'nullable|string',
+                'end_date' => 'nullable|string',
                 'is_active' => 'boolean',
                 'allow_retake' => 'boolean',
                 'show_results' => 'boolean',
             ]);
 
-            $test = Test::create([
-                'title' => $request->title,
-                'type' => $request->type,
-                'points_per_question' => $request->points_per_question,
-                'questions_per_attempt' => $request->questions_per_attempt,
-                'duration_minutes' => $request->duration_minutes,
-                'pass_score' => $request->pass_score,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'is_active' => $request->is_active ?? true,
-                'allow_retake' => $request->allow_retake ?? false,
-                'show_results' => $request->show_results ?? true,
-                'created_by' => auth()->id(),
-                'questions_count' => 0, // Will be updated when questions are added
-                'total_points' => 0, // Will be calculated when questions are added
-            ]);
+            // Convert datetime-local format to MySQL datetime
+            // Frontend: 2026-01-11T13:00
+            // MySQL: 2026-01-11 13:00:00
+            if (!empty($validated['start_date'])) {
+                $validated['start_date'] = str_replace('T', ' ', $validated['start_date']) . ':00';
+            }
+
+            if (!empty($validated['end_date'])) {
+                $validated['end_date'] = str_replace('T', ' ', $validated['end_date']) . ':00';
+            }
+
+            $validated['created_by'] = auth()->id();
+            $validated['total_points'] = 0;
+            $validated['questions_count'] = 0;
+
+            $test = Test::create($validated);
 
             return response()->json([
                 'success' => true,
@@ -104,12 +110,12 @@ class TestController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Test store error: ' . $e->getMessage());
+            \Log::error('Test create error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
                 'message' => 'Xatolik yuz berdi',
-                'error' => $e->getMessage()
+                'errors' => $e->getMessage()
             ], 500);
         }
     }
@@ -117,72 +123,95 @@ class TestController extends Controller
     /**
      * Display the specified test
      */
+    /**
+     * Get single test
+     */
+    /**
+     * Get single test for editing
+     */
+    /**
+     * Show test
+     */
     public function show($id)
     {
         try {
-            $test = Test::with(['creator', 'questions.answers'])->findOrFail($id);
+            $test = Test::with(['questions.answers', 'creator'])
+                ->findOrFail($id);
+
+            $testData = $test->toArray();
+
+            // Convert MySQL datetime to datetime-local format
+            // MySQL: 2026-01-11 13:00:00
+            // Frontend: 2026-01-11T13:00
+            if (!empty($testData['start_date'])) {
+                $testData['start_date'] = substr(str_replace(' ', 'T', $testData['start_date']), 0, 16);
+            }
+
+            if (!empty($testData['end_date'])) {
+                $testData['end_date'] = substr(str_replace(' ', 'T', $testData['end_date']), 0, 16);
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => $test
+                'data' => $testData
             ]);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (\Exception $e) {
+            \Log::error('Test show error: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Test topilmadi'
             ], 404);
-        } catch (\Exception $e) {
-            Log::error('Test show error', ['error' => $e->getMessage()]); // ← TUZATILDI
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Xatolik yuz berdi',
-                'error' => $e->getMessage()
-            ], 500);
         }
     }
 
     /**
      * Update the specified test
      */
+    /**
+     * Update test
+     */
+    /**
+     * Update test
+     */
+    /**
+     * Update test
+     */
     public function update(Request $request, $id)
     {
         try {
             $test = Test::findOrFail($id);
 
-            $request->validate([
+            $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'type' => 'required|in:entry,exit',
                 'points_per_question' => 'required|numeric|min:0.5',
-                'questions_per_attempt' => 'nullable|integer|min:1', // ← YANGI
+                'questions_per_attempt' => 'nullable|integer|min:1',
                 'duration_minutes' => 'required|integer|min:1',
                 'pass_score' => 'required|numeric|min:0|max:100',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'start_date' => 'nullable|string',
+                'end_date' => 'nullable|string',
                 'is_active' => 'boolean',
                 'allow_retake' => 'boolean',
                 'show_results' => 'boolean',
             ]);
 
-            $test->update([
-                'title' => $request->title,
-                'type' => $request->type,
-                'points_per_question' => $request->points_per_question,
-                'questions_per_attempt' => $request->questions_per_attempt, // ← YANGI
-                'duration_minutes' => $request->duration_minutes,
-                'pass_score' => $request->pass_score,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'is_active' => $request->is_active,
-                'allow_retake' => $request->allow_retake,
-                'show_results' => $request->show_results,
-            ]);
+            // Convert format
+            if (!empty($validated['start_date'])) {
+                $validated['start_date'] = str_replace('T', ' ', $validated['start_date']) . ':00';
+            }
+
+            if (!empty($validated['end_date'])) {
+                $validated['end_date'] = str_replace('T', ' ', $validated['end_date']) . ':00';
+            }
+
+            $test->update($validated);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Test yangilandi',
-                'data' => $test
+                'data' => $test->fresh(['questions', 'creator'])
             ]);
 
         } catch (\Exception $e) {
@@ -190,11 +219,11 @@ class TestController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Xatolik yuz berdi',
-                'error' => $e->getMessage()
+                'message' => 'Xatolik yuz berdi'
             ], 500);
         }
     }
+
 
     /**
      * Remove the specified test

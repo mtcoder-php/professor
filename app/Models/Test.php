@@ -24,8 +24,8 @@ class Test extends Model
     ];
 
     protected $casts = [
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
+//        'start_date' => 'datetime',
+//        'end_date' => 'datetime',
         'is_active' => 'boolean',
         'allow_retake' => 'boolean',
         'show_results' => 'boolean',

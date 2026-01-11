@@ -57,7 +57,7 @@
                         />
                     </div>
 
-                    <!-- Questions Per Attempt - YANGI ← -->
+                    <!-- Questions Per Attempt -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Har safar ko'rsatiladigan savollar
@@ -213,7 +213,7 @@ const form = ref({
     title: '',
     type: '',
     points_per_question: 2,
-    questions_per_attempt: null, // ← YANGI
+    questions_per_attempt: null,
     duration_minutes: 60,
     pass_score: 70,
     start_date: '',
@@ -230,6 +230,12 @@ const formatDateForInput = (dateString) => {
     if (!dateString) return '';
 
     try {
+        // If already in YYYY-MM-DDTHH:mm format, use it
+        if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+            return dateString;
+        }
+
+        // Parse and format
         const cleanDate = dateString.replace(/\.\d+Z?$/, '').replace(' ', 'T');
         const date = new Date(cleanDate);
 
@@ -254,7 +260,7 @@ watch(() => props.test, (test) => {
             title: test.title || '',
             type: test.type || '',
             points_per_question: test.points_per_question || 2,
-            questions_per_attempt: test.questions_per_attempt || null, // ← YANGI
+            questions_per_attempt: test.questions_per_attempt || null,
             duration_minutes: test.duration_minutes || 60,
             pass_score: test.pass_score || 70,
             start_date: formatDateForInput(test.start_date),
@@ -262,6 +268,21 @@ watch(() => props.test, (test) => {
             is_active: test.is_active ?? true,
             allow_retake: test.allow_retake ?? false,
             show_results: test.show_results ?? true
+        };
+    } else {
+        // Reset for create
+        form.value = {
+            title: '',
+            type: '',
+            points_per_question: 2,
+            questions_per_attempt: null,
+            duration_minutes: 60,
+            pass_score: 70,
+            start_date: '',
+            end_date: '',
+            is_active: true,
+            allow_retake: false,
+            show_results: true
         };
     }
 }, { immediate: true });
@@ -271,10 +292,12 @@ const handleSubmit = async () => {
     submitting.value = true;
 
     try {
+        let response;
+
         if (props.mode === 'create') {
-            await axios.post('/api/admin/tests', form.value);
+            response = await axios.post('/api/admin/tests', form.value);
         } else {
-            await axios.put(`/api/admin/tests/${props.test.id}`, form.value);
+            response = await axios.put(`/api/admin/tests/${props.test.id}`, form.value);
         }
 
         emit('success');

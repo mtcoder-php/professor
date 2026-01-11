@@ -157,6 +157,7 @@ Route::middleware(['auth:sanctum'])->prefix('teacher')->group(function () {
 // =====================================================
 Route::middleware(['auth:sanctum'])->prefix('prorektor')->group(function () {
     Route::get('/dashboard', [ProRektorDashboardController::class, 'index']);
+    Route::get('/dashboard/recent-activity', [ProRektorDashboardController::class, 'getRecentActivity']);
 
     // Test Permissions
     Route::get('/tests', [TestPermissionController::class, 'getTests']);
