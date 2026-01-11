@@ -216,41 +216,10 @@ class RolePermissionSeeder extends Seeder
                 'birth_date' => '1992-03-10',
                 'scientific_degree' => 'PhD',
             ],
-            [
-                'full_name' => 'Karimova Dilnoza Akramovna',
-                'department_id' => $matematikaKafedra->id,
-                'passport_series' => 'AD2222222',
-                'birth_date' => '1988-07-22',
-                'scientific_degree' => 'Fan nomzodi',
-            ],
-            [
-                'full_name' => 'Ahmadov Sardor Rustamovich',
-                'department_id' => $ingliztiliKafedra->id,
-                'passport_series' => 'AE3333333',
-                'birth_date' => '1995-12-05',
-                'scientific_degree' => 'Katta o\'qituvchi',
-            ],
-            [
-                'full_name' => 'Usmonov Aziz Shavkatovich',
-                'department_id' => Department::where('code', 'IK')->first()->id,
-                'passport_series' => 'AF4444444',
-                'birth_date' => '1991-09-18',
-                'scientific_degree' => 'Dotsent',
-            ],
-            [
-                'full_name' => 'Toshmatov Bobur Anvarovich',
-                'department_id' => Department::where('code', 'FK')->first()->id,
-                'passport_series' => 'AG5555555',
-                'birth_date' => '1987-11-30',
-                'scientific_degree' => 'Professor',
-            ],
-            [
-                'full_name' => 'Nurmatova Malika Zokir qizi',
-                'department_id' => Department::where('code', 'KK')->first()->id,
-                'passport_series' => 'AH6666666',
-                'birth_date' => '1993-04-25',
-                'scientific_degree' => 'PhD',
-            ],
+
+
+
+
         ];
 
         foreach ($teachers as $index => $teacherData) {

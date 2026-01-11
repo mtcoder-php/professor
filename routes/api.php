@@ -116,11 +116,13 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::post('/assign-role', [RoleController::class, 'assignRole']);
 
     // Reports - ADMIN (FAQAT DATA, EXPORT YUQORIDA) ←
-    Route::get('/reports/overall', [AdminReportController::class, 'getOverallStatistics']);
+    Route::get('/reports/overall', [AdminReportController::class, 'getOverallStats']);
     Route::get('/reports/teachers', [AdminReportController::class, 'getTeachersByDepartment']);
 
 
     Route::get('/dashboard/stats', [AdminDashboardController::class, 'getStats']);
+    Route::get('/dashboard/recent-activity', [AdminDashboardController::class, 'getRecentActivity']);
+
 });
 
 // =====================================================

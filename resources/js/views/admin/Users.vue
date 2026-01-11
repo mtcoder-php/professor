@@ -479,14 +479,18 @@ const editUser = (user) => {
 
 const viewUser = async (user) => {
     try {
+        // Load full user data from API
         const response = await axios.get(`/api/admin/users/${user.id}`);
+
         if (response.data.success) {
             selectedUser.value = response.data.data;
             showViewModal.value = true;
+
+            console.log('✅ User loaded for view:', selectedUser.value);
         }
     } catch (error) {
-        console.error('O\'qituvchini yuklashda xatolik:', error);
-        alert('O\'qituvchini yuklashda xatolik yuz berdi');
+        console.error('❌ Load user error:', error);
+        alert('Foydalanuvchi ma\'lumotlarini yuklashda xatolik');
     }
 };
 

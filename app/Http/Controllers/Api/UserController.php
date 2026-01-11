@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PortfolioFile;
+use App\Models\TestResult;
 use App\Models\User;
 use App\Models\Faculty;
 use App\Models\Department;
@@ -158,10 +160,19 @@ class UserController extends Controller
     /**
      * Display the specified user
      */
-    public function show(User $user)
+    /**
+     * Show single user
+     */
+    public function show($id)
     {
         try {
-            $user->load(['faculty', 'department', 'roles']);
+            $user = User::with(['faculty', 'department', 'roles'])
+                ->findOrFail($id);
+
+            \Log::info('User show', [
+                'user_id' => $id,
+                'user_data' => $user->toArray()
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -173,107 +184,143 @@ class UserController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Xatolik yuz berdi',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Foydalanuvchi topilmadi'
+            ], 404);
         }
     }
 
     /**
      * Update the specified user
      */
-    public function update(Request $request, User $user)
+    /**
+     * Update user
+     */
+    public function update(Request $request, $id)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'full_name' => 'required|string|max:255',
-                'faculty_id' => 'required|exists:faculties,id',
-                'department_id' => 'required|exists:departments,id',
-                'scientific_degree' => 'required|string',
-                'passport_series' => 'required|string|regex:/^[A-Z]{2}[0-9]{7}$/|unique:users,passport_series,' . $user->id,
-                'birth_date' => 'required|date',
-                'phone' => 'nullable|string',
-                'email' => 'nullable|email|unique:users,email,' . $user->id,
-                'avatar' => 'nullable|image|max:2048',
-                'role' => 'required|string|in:admin,prorektor,teacher'
+            $user = User::findOrFail($id);
+
+            \Log::info('User update request', [
+                'user_id' => $id,
+                'request_data' => $request->all()
             ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validatsiya xatosi',
-                    'errors' => $validator->errors()
-                ], 422);
+            // Validation rules
+            $rules = [
+                'full_name' => 'required|string|max:255',
+                'faculty_id' => 'nullable|exists:faculties,id',
+                'department_id' => 'nullable|exists:departments,id',
+                'scientific_degree' => 'nullable|string|max:100',
+                'phone' => 'nullable|string|max:20',
+                'email' => 'nullable|email|unique:users,email,' . $id,
+                'passport_series' => 'required|string|regex:/^[A-Z]{2}[0-9]{7}$/|unique:users,passport_series,' . $id,
+                'birth_date' => 'required|date',
+            ];
+
+            // Avatar validation only if uploaded
+            if ($request->hasFile('avatar')) {
+                $rules['avatar'] = 'image|mimes:jpeg,png,jpg|max:2048';
             }
+
+            $validated = $request->validate($rules);
 
             // Handle avatar upload
             if ($request->hasFile('avatar')) {
-                // Delete old avatar
-                if ($user->avatar) {
-                    \Storage::disk('public')->delete($user->avatar);
+                // Delete old avatar if exists
+                if ($user->avatar && file_exists(public_path($user->avatar))) {
+                    unlink(public_path($user->avatar));
                 }
 
-                $avatarPath = $request->file('avatar')->store('avatars', 'public');
-                $user->avatar = $avatarPath;
+                $avatar = $request->file('avatar');
+                $avatarName = time() . '_' . $avatar->getClientOriginalName();
+                $avatar->move(public_path('avatars'), $avatarName);
+                $validated['avatar'] = 'avatars/' . $avatarName;
             }
 
             // Update user
-            $user->update([
-                'full_name' => $request->full_name,
-                'faculty_id' => $request->faculty_id,
-                'department_id' => $request->department_id,
-                'scientific_degree' => $request->scientific_degree,
-                'passport_series' => strtoupper($request->passport_series),
-                'birth_date' => $request->birth_date,
-                'phone' => $request->phone,
-                'email' => $request->email
-            ]);
+            $user->update($validated);
 
-            // Update role
-            $user->syncRoles([$request->role]);
+            \Log::info('User updated successfully', [
+                'user_id' => $user->id,
+                'updated_data' => $validated
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'O\'qituvchi muvaffaqiyatli yangilandi',
-                'data' => $user->load(['faculty', 'department', 'roles'])
+                'message' => 'Foydalanuvchi yangilandi',
+                'data' => $user->fresh()->load(['faculty', 'department'])
             ]);
 
-        } catch (\Exception $e) {
-            \Log::error('User update error: ' . $e->getMessage());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('User update validation error', [
+                'user_id' => $id,
+                'errors' => $e->errors()
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Xatolik yuz berdi',
-                'error' => $e->getMessage()
+                'message' => 'Validatsiya xatoligi',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('User update error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Xatolik yuz berdi: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Remove the specified user
+     * Delete user
      */
-    public function destroy(User $user)
+    public function destroy($id)
     {
         try {
-            // Delete avatar
-            if ($user->avatar) {
-                \Storage::disk('public')->delete($user->avatar);
+            $user = User::findOrFail($id);
+
+            \Log::info('User delete request', [
+                'user_id' => $id,
+                'user_name' => $user->full_name
+            ]);
+
+            // Check if user has test results or portfolios
+            $hasTestResults = TestResult::where('user_id', $id)->exists();
+            $hasPortfolios = PortfolioFile::where('user_id', $id)->exists();
+
+            if ($hasTestResults || $hasPortfolios) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu foydalanuvchini o\'chirish mumkin emas. Test natijalari yoki portfolio mavjud.'
+                ], 400);
+            }
+
+            // Delete avatar if exists
+            if ($user->avatar && file_exists(public_path($user->avatar))) {
+                unlink(public_path($user->avatar));
             }
 
             $user->delete();
 
+            \Log::info('User deleted successfully', [
+                'user_id' => $id
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'O\'qituvchi muvaffaqiyatli o\'chirildi'
+                'message' => 'Foydalanuvchi o\'chirildi'
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('User destroy error: ' . $e->getMessage());
+            \Log::error('User delete error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Xatolik yuz berdi',
-                'error' => $e->getMessage()
+                'message' => 'Xatolik yuz berdi: ' . $e->getMessage()
             ], 500);
         }
     }

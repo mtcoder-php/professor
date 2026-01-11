@@ -36,7 +36,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">Fakultetlar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.faculties || 0 }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.total_faculties || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
@@ -57,7 +57,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">Kafedralar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.departments || 0 }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.total_departments || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
@@ -78,7 +78,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">O'qituvchilar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.teachers || 0 }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.total_teachers || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
@@ -99,14 +99,14 @@
                     </div>
                     <div class="text-right">
                         <p class="text-white/80 text-sm font-medium">Testlar</p>
-                        <p class="text-4xl font-bold text-white">{{ stats.tests || 0 }}</p>
+                        <p class="text-4xl font-bold text-white">{{ stats.total_tests || 0 }}</p>
                     </div>
                 </div>
                 <div class="flex items-center text-white/80 text-sm">
                     <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
                     </svg>
-                    <span>Faol testlar</span>
+                    <span>{{ stats.active_tests || 0 }} ta faol</span>
                 </div>
             </div>
         </div>
@@ -117,44 +117,50 @@
             <div class="card">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-bold text-gray-800">So'nggi faoliyat</h3>
-                    <span class="badge badge-info">Bugun</span>
+                    <button @click="loadRecentActivity" class="text-sm text-green-600 hover:text-green-700 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Yangilash
+                    </button>
                 </div>
-                <div class="space-y-4">
-                    <div class="flex items-start space-x-4 p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer">
-                        <div class="p-2 bg-blue-500 rounded-lg">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-gray-800">Yangi o'qituvchi qo'shildi</p>
-                            <p class="text-sm text-gray-500">Karimova Dilnoza • 10 daqiqa oldin</p>
-                        </div>
-                    </div>
 
-                    <div class="flex items-start space-x-4 p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors cursor-pointer">
-                        <div class="p-2 bg-green-500 rounded-lg">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-gray-800">Test yaratildi</p>
-                            <p class="text-sm text-gray-500">Kiruvchi test • 1 soat oldin</p>
-                        </div>
-                    </div>
+                <!-- Loading -->
+                <div v-if="loadingActivity" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                </div>
 
-                    <div class="flex items-start space-x-4 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors cursor-pointer">
-                        <div class="p-2 bg-purple-500 rounded-lg">
+                <!-- Activities -->
+                <div v-else-if="recentActivity.length > 0" class="space-y-4">
+                    <div
+                        v-for="activity in recentActivity"
+                        :key="activity.timestamp"
+                        class="flex items-start space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                        :class="getActivityBgClass(activity.color)"
+                    >
+                        <div class="p-2 rounded-lg" :class="getActivityIconClass(activity.color)">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                <!-- User icon -->
+                                <path v-if="activity.icon === 'user'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                <!-- Clipboard icon -->
+                                <path v-else-if="activity.icon === 'clipboard'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                <!-- Folder icon -->
+                                <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="font-semibold text-gray-800">Portfolio yuklandi</p>
-                            <p class="text-sm text-gray-500">Ahmadov Jamshid • 2 soat oldin</p>
+                            <p class="font-semibold text-gray-800">{{ activity.title }}</p>
+                            <p class="text-sm text-gray-500">{{ activity.description }} • {{ formatActivityTime(activity.timestamp) }}</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-else class="text-center py-8 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p>Hozircha faoliyat yo'q</p>
                 </div>
             </div>
 
@@ -222,12 +228,15 @@ const authStore = useAuthStore();
 const user = computed(() => authStore.user);
 
 const loading = ref(false);
+const loadingActivity = ref(false);
 const stats = ref({
-    faculties: 0,
-    departments: 0,
-    teachers: 0,
-    tests: 0
+    total_faculties: 0,
+    total_departments: 0,
+    total_teachers: 0,
+    total_tests: 0,
+    active_tests: 0
 });
+const recentActivity = ref([]);
 
 const currentDate = computed(() => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -249,7 +258,62 @@ const loadStats = async () => {
     }
 };
 
-onMounted(() => {
-    loadStats();
+const loadRecentActivity = async () => {
+    loadingActivity.value = true;
+    try {
+        const response = await axios.get('/api/admin/dashboard/recent-activity');
+
+        if (response.data.success) {
+            recentActivity.value = response.data.data;
+        }
+    } catch (error) {
+        console.error('Load activity error:', error);
+        recentActivity.value = [];
+    } finally {
+        loadingActivity.value = false;
+    }
+};
+
+const getActivityBgClass = (color) => {
+    const classes = {
+        'green': 'bg-green-50 hover:bg-green-100',
+        'blue': 'bg-blue-50 hover:bg-blue-100',
+        'purple': 'bg-purple-50 hover:bg-purple-100'
+    };
+    return classes[color] || 'bg-gray-50 hover:bg-gray-100';
+};
+
+const getActivityIconClass = (color) => {
+    const classes = {
+        'green': 'bg-green-500',
+        'blue': 'bg-blue-500',
+        'purple': 'bg-purple-500'
+    };
+    return classes[color] || 'bg-gray-500';
+};
+
+const formatActivityTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'hozir';
+    if (diffMins < 60) return `${diffMins} daqiqa oldin`;
+    if (diffHours < 24) return `${diffHours} soat oldin`;
+    if (diffDays === 1) return 'kecha';
+    if (diffDays < 7) return `${diffDays} kun oldin`;
+
+    return date.toLocaleDateString('uz-UZ', {
+        day: 'numeric',
+        month: 'short'
+    });
+};
+
+onMounted(async () => {
+    await loadStats();
+    await loadRecentActivity();
 });
 </script>
