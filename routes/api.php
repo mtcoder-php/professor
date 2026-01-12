@@ -156,6 +156,12 @@ Route::middleware(['auth:sanctum'])->prefix('teacher')->group(function () {
 // PROREKTOR ROUTES
 // =====================================================
 Route::middleware(['auth:sanctum'])->prefix('prorektor')->group(function () {
+
+    Route::get('/profile', [App\Http\Controllers\Api\ProRektor\ProfileController::class, 'show']);
+    Route::put('/profile', [App\Http\Controllers\Api\ProRektor\ProfileController::class, 'update']);
+    Route::post('/profile/change-password', [App\Http\Controllers\Api\ProRektor\ProfileController::class, 'changePassword']);
+
+
     Route::get('/dashboard', [ProRektorDashboardController::class, 'index']);
     Route::get('/dashboard/recent-activity', [ProRektorDashboardController::class, 'getRecentActivity']);
 

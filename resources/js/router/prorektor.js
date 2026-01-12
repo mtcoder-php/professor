@@ -6,6 +6,12 @@ export default [
         meta: { requiresAuth: true, role: 'prorektor' }
     },
     {
+        path: '/prorektor/profile',
+        name: 'ProRektorProfile',
+        component: () => import('@/views/prorektor/Profile.vue'),
+        meta: { requiresAuth: true, role: 'prorektor' }
+    },
+    {
         path: '/prorektor/test-permissions',
         name: 'ProRektorTestPermissions',
         component: () => import('@/views/prorektor/TestPermissions.vue'),
@@ -29,7 +35,6 @@ export default [
         component: () => import('@/views/prorektor/TeacherPortfolioEvaluation.vue'),
         meta: { requiresAuth: true, role: 'prorektor' }
     },
-    // YANGI - Reports ←
     {
         path: '/prorektor/reports',
         name: 'ProRektorReports',

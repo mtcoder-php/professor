@@ -9,6 +9,7 @@ import TeacherLayout from '@/layouts/TeacherLayout.vue';
 // Auth
 import Login from '@/views/auth/Login.vue';
 import Register from '@/views/auth/Register.vue';
+
 // Admin Views
 import AdminDashboard from '@/views/admin/Dashboard.vue';
 import Faculties from '@/views/admin/Faculties.vue';
@@ -19,13 +20,15 @@ import AdminProfile from '@/views/admin/Profile.vue';
 import AdminSettings from '@/views/admin/Settings.vue';
 import AdminRoles from '@/views/admin/Roles.vue';
 import AdminReports from '@/views/admin/Reports.vue';
+
 // ProRektor Views
 import ProRektorDashboard from '@/views/prorektor/Dashboard.vue';
+import ProRektorProfile from '@/views/prorektor/Profile.vue'; // ← YANGI
 import TestPermissions from '@/views/prorektor/TestPermissions.vue';
 import TestResults from '@/views/prorektor/TestResults.vue';
 import PortfolioEvaluations from '@/views/prorektor/PortfolioEvaluations.vue';
 import TeacherPortfolioEvaluation from '@/views/prorektor/TeacherPortfolioEvaluation.vue';
-import Reports from '@/views/prorektor/Reports.vue'; // ← YANGI
+import ProRektorReports from '@/views/prorektor/Reports.vue';
 
 // Teacher Views
 import TeacherDashboard from '@/views/teacher/Dashboard.vue';
@@ -44,9 +47,10 @@ const routes = [
     {
         path: '/register',
         name: 'Register',
-        component: Register, // ← Register sahifasini bog'lang
+        component: Register,
         meta: { guest: true }
     },
+
     // Admin Routes
     {
         path: '/admin',
@@ -113,6 +117,11 @@ const routes = [
                 component: ProRektorDashboard
             },
             {
+                path: 'profile', // ← YANGI
+                name: 'ProRektorProfile',
+                component: ProRektorProfile
+            },
+            {
                 path: 'test-permissions',
                 name: 'TestPermissions',
                 component: TestPermissions
@@ -132,11 +141,10 @@ const routes = [
                 name: 'TeacherPortfolioEvaluation',
                 component: TeacherPortfolioEvaluation
             },
-            // Reports - YANGI ←
             {
                 path: 'reports',
-                name: 'Reports',
-                component: Reports
+                name: 'ProRektorReports',
+                component: ProRektorReports
             }
         ]
     },
